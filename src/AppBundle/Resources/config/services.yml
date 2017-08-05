@@ -1,0 +1,8 @@
+services:
+    doctrine.user_listener:
+        class: AppBundle\Doctrine\HashIdListener
+        arguments:
+            - "@hashids"
+        tags:
+            - { name: doctrine.event_listener, event: postLoad  }
+

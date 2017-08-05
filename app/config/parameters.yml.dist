@@ -17,3 +17,11 @@ parameters:
 
     # A secret key that's used to generate certain security-related tokens
     secret:            ThisTokenIsNotSoSecretChangeIt
+
+
+    # maxPerPage 30
+    pagination:
+        maxPerPage: ~
+
+    # url of app : http://localhost:8000 for example
+    hostname: ~
