@@ -12,7 +12,6 @@ use Symfony\Component\Validator\Constraints as Assert;
  * @ORM\Table(name="movies")
  * @ORM\Entity(repositoryClass="AppBundle\Repository\MoviesRepository")
  *
- * @Serializer\ExclusionPolicy("ALL")
  */
 class Movies
 {
@@ -23,7 +22,6 @@ class Movies
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="AUTO")
      * @Serializer\Groups({"movie"})
-     * @Serializer\Expose
      */
     private $id;
 
@@ -33,7 +31,6 @@ class Movies
      * @ORM\Column(name="name", type="string", length=255)
      * @Serializer\Groups({"movie"})
      * @Assert\NotBlank(message="the field cannot be empty")
-     * @Serializer\Expose
      */
     private $name;
 
@@ -49,7 +46,6 @@ class Movies
      * @var string
      *
      * @ORM\Column(name="hash_id", type="string", nullable=true, length=255)
-     * @Serializer\Expose)
      * @Serializer\Groups({"movie"})
      * @Serializer\SerializedName("id")
      *

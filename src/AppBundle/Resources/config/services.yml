@@ -1,8 +1,19 @@
 services:
     doctrine.user_listener:
         class: AppBundle\Doctrine\HashIdListener
-        arguments:
-            - "@hashids"
+        arguments: ['@hashids']
         tags:
             - { name: doctrine.event_listener, event: postLoad  }
+
+
+
+    pagination_factory:
+        class: AppBundle\Pagination\PaginationFactory
+        arguments: ['@router', %pagination%]
+
+
+    movies_manager:
+        class: AppBundle\MoviesManager\MoviesManager
+        arguments: ['@form.factory','@doctrine', '@validator' ]
+
 

@@ -41,41 +41,22 @@ class ApiController extends FOSRestController
      *     description="Page of result"
      * )
      *
-     * @Rest\View(serializerGroups={"movie"})
+     * @Rest\View(serializerGroups={"movie"}, statusCode=200)
      */
-    public function getAction($order, $dir, $page)
+    public function getAction(Request $request, $order, $dir, $page)
     {
 
-        $movies = $this->getDoctrine()->getRepository("AppBundle:Movies")->listMoviesWithOrder($order, $dir);
+        $qb = $this->getDoctrine()->getRepository("AppBundle:Movies")->getMovies($order, $dir);
 
-        $adapter = new \Pagerfanta\Adapter\ArrayAdapter($movies);
-        $pager = new \Pagerfanta\Pagerfanta($adapter);
-        $pager->setMaxPerPage($this->getParameter("pagination")["maxPerPage"]);
-
-        if ($page) {
-            try {
-                $pager->setCurrentPage($page);
-            } catch (NotValidCurrentPageException $e) {
-                throw new NotFoundHttpException();
-            }
-        }
-
-        $result = $pager->getCurrentPageResults();
-        $prevPage = ($page == 1) ? 1 : $pager->getPreviousPage();
-
-        return [
-            "total" => $pager->getNbResults(),
-            "count" => count($result),
-            "data" => [
-                $result
-            ],
-            "links" => [
-                "next" => $this->generateUrl('show_movies', ['page' => $pager->getNextPage()], UrlGeneratorInterface::ABSOLUTE_URL),
-                "prev" => $this->generateUrl('show_movies', ['page' => $prevPage], UrlGeneratorInterface::ABSOLUTE_URL),
-                "numberPage" => $pager->getNbPages(),
-                "actualPage" => $pager->getCurrentPage()
-            ]
-        ];
+        $routeName = "show_movies";
+        $paginator = $this->get('pagination_factory')->createCollectionPagination(
+            $qb,
+            $request,
+            $routeName,
+            ["order" => $order, "dir" => $dir],
+            $page
+        );
+        return $paginator;
     }
 
     /**
@@ -86,45 +67,30 @@ class ApiController extends FOSRestController
      *     name="create_movies"
      * )
      *
-     * @Rest\View(statusCode=201, serializerGroups={"movie"})
+     * @Rest\View(statusCode=201)
      */
     public function postAction(Request $request)
     {
 
-        $em = $this->getDoctrine()->getManager();
-
         $data = $this->get('jms_serializer')->deserialize($request->getContent(), 'array', 'json');
-        $movies = new Movies();
-        $form = $this->get('form.factory')->create(MoviesType::class, $movies);
-
-        $form->submit($data);
-        if (!$form->isValid()) {
-            $errors = $this->getErrorsFromValidator($movies);
-
+        $handler = $this->getMoviesManager()->saveMovies($data);
+        if ($handler !== true) {
             return $this->view(
-                $errors,
+                $handler,
                 Response::HTTP_BAD_REQUEST
             );
         }
-        $em->persist($movies);
-        $em->flush();
     }
 
     /**
-     * Get error from validator
+     * Get service movies_manager
      *
-     * @param $entity Movies
-     * @return array List error caught from the validator
+     * @return \AppBundle\MoviesManager\MoviesManager|object
      */
-    private function getErrorsFromValidator($entity)
+    private function getMoviesManager()
     {
-        $dataErrors = array();
-        $errors = $this->get('validator')->validate($entity);
-        foreach ($errors as $error) {
-            $dataErrors["Fields"] = $error->getPropertyPath();
-            $dataErrors["Cause"] = $error->getMessage();
-        }
-        return $dataErrors;
+
+        return $this->get("movies_manager");
     }
 
 
@@ -136,30 +102,19 @@ class ApiController extends FOSRestController
      *     name = "delete_movies",
      *     requirements={"id" = "\w+"}
      * )
-     * @Rest\View(statusCode=204, serializerGroups={"movie"})
+     * @Rest\View(statusCode=204)
      */
     public function deleteAction(Request $request)
     {
-
-        $em = $this->getDoctrine();
         $hashid = $this->get('hashids')->decode($request->get('id'));
-
-        if (empty($hashid)) {
-            return $this->view(
-                "This is doesn't exist",
-                Response::HTTP_NOT_FOUND
-            );
-        }
-        $movie = $em->getRepository("AppBundle:Movies")->find($hashid[0]);
-
-        if (!$movie) {
+        $handler = $this->getMoviesManager()->deleteMovie($hashid);
+        if ($handler == false) {
             return $this->view(
                 sprintf("Movies with id : %d doesn't exist", $request->get('id')),
                 Response::HTTP_NOT_FOUND
             );
         }
-        $em->getManager()->remove($movie);
-        $em->getManager()->flush();
+
     }
 
 }

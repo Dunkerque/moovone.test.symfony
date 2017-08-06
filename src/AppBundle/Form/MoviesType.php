@@ -25,8 +25,7 @@ class MoviesType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults(array(
-            'data_class' => 'AppBundle\Entity\Movies',
-            'csrf_protection' => false,
+            'data_class' => 'AppBundle\Entity\Movies'
         ));
     }
 
